@@ -1,0 +1,4 @@
+flask
+flask_cors
+smbus2
+RPi.bme280

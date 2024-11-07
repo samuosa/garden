@@ -1,0 +1,10 @@
+flask
+flask_cors
+smbus
+smbus2
+RPi.GPIO
+Flask-JWT-Extended
+picamera
+opencv-python
+Pillow
+mysql-connector-python

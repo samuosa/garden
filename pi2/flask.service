@@ -1,0 +1,15 @@
+[Unit]
+Description=Start Your Python Script with Virtual Environment
+After=network.target
+
+[Service]
+ExecStart=/bin/bash /home/admin/startup.sh
+WorkingDirectory=/home/admin
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
+sudo nano /etc/systemd/system/flask.service
