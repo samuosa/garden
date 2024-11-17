@@ -15,13 +15,17 @@ function App() {
 
   return (
     <div className="container">
-      <ViewReadings />
+      <div className="container">
+        <ViewReadings />
+      </div>
+      <div className="container">
+      </div>
+
       {/*
       {token ? (
         <>
           <h1 className="my-4">Gardening Control Panel</h1>
           <FillLevel token={token}/>
-          <LiveView token={token}/>
           <SoilMoisture token={token}/>
           <TempHumidity token={token}/> 
           <DeviceControl token={token}/>

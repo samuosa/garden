@@ -1,5 +1,6 @@
 #!/bin/sh
-python3 -m venv ./
+python3 -m venv ./ --system-site-packages
+
 source bin/activate
 pip install flask
 pip install smbus

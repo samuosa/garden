@@ -15,6 +15,6 @@ def read_soil_moisture():
     except OSError as e:
         print("Failed to read from the ESP32:", e)
 
-while True:
-    read_soil_moisture()
-    time.sleep(1)  # Delay between readings
+#while True:
+#    read_soil_moisture()
+#    time.sleep(1)  # Delay between readings

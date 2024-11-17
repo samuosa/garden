@@ -80,9 +80,6 @@ sudo apt-get install -y v4l-utils
 
 sudo apt install -y python3-opencv python3-pi
 
-
-
-
 mariaDB
 
 sudo apt install mariadb-server -y
@@ -92,13 +89,11 @@ sudo mysql_secure_installation
 sudo systemctl start mariadb
 sudo systemctl enable mariadb
 
-
 CREATE DATABASE sensor_data;
 
 CREATE USER 'flask'@'localhost' IDENTIFIED BY 'test';
 GRANT ALL PRIVILEGES ON sensor_data.* TO 'flask'@'localhost';
 FLUSH PRIVILEGES;
-
 
 ```sql
 CREATE TABLE air_readings (
@@ -121,7 +116,6 @@ CREATE TABLE floor_readings (
 );
 ```
 
-
 ```sql
 CREATE TABLE fill_readings (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -130,3 +124,40 @@ CREATE TABLE fill_readings (
     UNIQUE KEY unique_timestamp (timestamp)
 );
 ```
+
+sudo apt update
+sudo apt install -y python3-dev build-essential
+
+sudo apt-get install -y libgl1-mesa-glx
+
+sudo apt install -y python3-picamera2
+
+nginx
+
+<pre class="!overflow-visible"><div class="contain-inline-size rounded-md border-[0.5px] border-token-border-medium relative bg-token-sidebar-surface-primary dark:bg-gray-950"><div class="overflow-y-auto p-4" dir="ltr"><code class="!whitespace-pre hljs language-bash">sudo nano /etc/nginx/sites-available/default
+</code></div></div></pre>
+
+server {
+    listen 80;
+    server_name _;
+
+    root /var/www/html;
+    index index.html;
+
+    location / {
+        # Handles React Router: Serves index.html for any unmatched routes
+        try_files$uri $uri/ /index.html;
+    }
+
+    # Ensure Nginx can serve static assets like JS, CSS, images, etc.
+    location /static/ {
+        alias /var/www/html/static/;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+    }
+}
+
+
+sudo chown -R www-data:www-data /var/www/html
+
+sudo chmod -R 755 /var/www/html

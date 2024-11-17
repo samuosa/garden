@@ -9,7 +9,7 @@ import atexit
 import schedule
 
 from read_bme import readBme
-from pump import pump, cleanupPump
+from pump import pump,cleanupPump
 from camera_handler import CameraHandler
 
 app = Flask(__name__)
@@ -18,9 +18,6 @@ camera_handler = CameraHandler()
 
 # Event to control the background saving loop
 automation_event = Event()
-
-# File to store watering schedules
-SCHEDULE_FILE = './watering_schedules.csv'
 
 def save_readings_to_csv():
     """
@@ -61,45 +58,13 @@ def save_picture():
     else:
         print("Failed to capture image.")
 
+# Schedule pump automation tasks
+schedule.every().day.at("04:00").do(lambda: pump(50))
+schedule.every().day.at("18:00").do(lambda: pump(50))
+
 # Schedule picture automation task
 schedule.every().day.at("16:00").do(save_picture)
 
-# Load schedules from file
-def load_schedules():
-    try:
-        with open(SCHEDULE_FILE, mode='r') as file:
-            reader = csv.reader(file, delimiter=';')
-            next(reader, None)  # Skip the header row
-            for row in reader:
-                if len(row) == 2:
-                    time_str, volume = row
-                    schedule.every().day.at(time_str).do(lambda vol=int(volume): pump(vol)).tag(time_str)
-                    print(f"Loaded schedule: Time {time_str}, Volume {volume}")
-    except FileNotFoundError:
-        print("No existing schedules found.")
-
-# Save a new schedule to the CSV file
-def save_schedule(time_str, volume):
-    with open(SCHEDULE_FILE, mode='a', newline='') as file:
-        writer = csv.writer(file, delimiter=';')
-        writer.writerow([time_str, volume])
-    print(f"Saved new schedule: Time {time_str}, Volume {volume}")
-
-# Remove a schedule from the CSV file
-def remove_schedule_from_file(time_str):
-    updated_schedules = []
-    with open(SCHEDULE_FILE, mode='r') as file:
-        reader = csv.reader(file, delimiter=';')
-        for row in reader:
-            if row[0] != time_str:
-                updated_schedules.append(row)
-
-    with open(SCHEDULE_FILE, mode='w', newline='') as file:
-        writer = csv.writer(file, delimiter=';')
-        writer.writerows(updated_schedules)
-
-# Load existing schedules at startup
-load_schedules()
 
 # Endpoint to get air
 @app.route('/air', methods=['GET'])
@@ -114,6 +79,7 @@ def get_air_endpoint():
         }), 200
     else:
         return jsonify({'status': 'error', 'message': 'Failed to read temperature'}), 500
+
 
 # Endpoint to get all readings
 @app.route('/all_readings', methods=['GET'])
@@ -135,7 +101,6 @@ def get_all_readings():
         return jsonify({'status': 'error', 'message': 'No readings found'}), 404
     
     return jsonify(readings), 200
-
 # POST Endpoint to pump a specified amount in ml
 @app.route('/pump', methods=['POST'])
 def pump_endpoint():
@@ -157,15 +122,20 @@ def get_watering():
             next(reader, None)  # Skip the header row
             for row in reader:
                 if len(row) == 3:
+                    print(row)
                     timestamp, volume_ml, power = row
+                    print(timestamp)
                     watering_log.append({
                         'timestamp': timestamp,
                         'volume': volume_ml
                     })
+                    print(watering_log)
     except FileNotFoundError:
         return jsonify({'status': 'error', 'message': 'No watering records found'}), 404
 
+    print(watering_log)
     return jsonify(watering_log), 200
+
 
 @app.route('/picture', methods=['GET'])
 def get_picture():
@@ -174,65 +144,12 @@ def get_picture():
         return Response(img_bytes, mimetype='image/jpeg')
     else:
         return Response("Failed to capture image.", status=500)
-
-# POST Endpoint to set a new watering schedule
-@app.route('/schedule', methods=['POST'])
-def set_schedule():
-    data = request.get_json()
-    if not data or 'time' not in data or 'volume' not in data:
-        return jsonify({'status': 'error', 'message': 'Time and volume are required'}), 400
-
-    time_str = data['time']
-    volume = data['volume']
-    try:
-        schedule.every().day.at(time_str).do(lambda vol=int(volume): pump(vol)).tag(time_str)
-        save_schedule(time_str, volume)
-        return jsonify({'status': 'success', 'message': f'Schedule set for {time_str}, Volume {volume} ml'}), 200
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-# DELETE Endpoint to remove a watering schedule
-@app.route('/schedule', methods=['DELETE'])
-def delete_schedule():
-    data = request.get_json()
-    if not data or 'time' not in data:
-        return jsonify({'status': 'error', 'message': 'Time is required'}), 400
-
-    time_str = data['time']
-    try:
-        schedule.clear(time_str)  # This removes scheduled tasks with the specified tag
-        remove_schedule_from_file(time_str)
-        return jsonify({'status': 'success', 'message': f'Schedule at {time_str} has been deleted'}), 200
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-# GET Endpoint to retrieve all watering schedules
-@app.route('/schedules', methods=['GET'])
-def get_schedules():
-    schedules = []
-    try:
-        with open(SCHEDULE_FILE, mode='r') as file:
-            reader = csv.reader(file, delimiter=';')
-            next(reader, None)  # Skip the header row
-            for row in reader:
-                if len(row) == 2:
-                    time_str, volume = row
-                    schedules.append({
-                        'time': time_str,
-                        'volume': volume
-                    })
-    except FileNotFoundError:
-        return jsonify({'status': 'error', 'message': 'No schedules found'}), 404
-
-    return jsonify(schedules), 200
+    
 
 if __name__ == '__main__':
     # Start the background thread to save readings every 10 minutes
     background_thread = threading.Thread(target=save_readings_to_csv, daemon=True)
     background_thread.start()
-    # Load schedules and start the automated pump thread
-    automate_thread = threading.Thread(target=automate_pump, daemon=True)
-    automate_thread.start()
     # Run the Flask app
     app.run(host='0.0.0.0', port=5000)
 

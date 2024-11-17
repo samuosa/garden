@@ -8,3 +8,4 @@ picamera
 opencv-python
 Pillow
 mysql-connector-python
+RPi.bme280
